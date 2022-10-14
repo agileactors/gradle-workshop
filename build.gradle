@@ -1,28 +1,38 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
-    id 'org.springframework.boot' version '2.7.1'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
+    id 'org.springframework.boot' version '2.7.3' apply false
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE' apply false
 }
 
-group = 'com.example'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
-targetCompatibility = '17'
+subprojects {
+    subproject ->
+        {
+            subproject.apply plugin: 'java'
+            subproject.apply plugin: 'io.spring.dependency-management'
+        }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    // In case libraries are downloaded locally
-    flatDir {
-        dirs 'lib1', 'lib2'
-    }
-}
+        group = 'com.agileactors'
+        version = '0.0.1-SNAPSHOT'
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
+        repositories {
+            mavenLocal()
+            mavenCentral()
+            // In case libraries are downloaded locally
+            flatDir {
+                dirs 'lib1', 'lib2'
+            }
+        }
 
-tasks.named('test') {
-    useJUnitPlatform()
+        dependencyManagement {
+            imports {
+                // The following will be used from all subprojects. This will define the versions of the imported
+                // libraries
+                mavenBom(SpringBootPlugin.BOM_COORDINATES)
+            }
+        }
+
+        // namespace your libraries... Imagine having to install them to a repo where several other libraries - projects
+        // can have the same name (e.g. libraryone, core, web etc)
+        archivesBaseName = project.rootProject.name + '-' + project.name
 }
