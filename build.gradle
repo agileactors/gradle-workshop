@@ -3,12 +3,14 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id 'org.springframework.boot' version '2.7.3' apply false
     id 'io.spring.dependency-management' version '1.0.11.RELEASE' apply false
+    id 'test-report-aggregation'
 }
 
 subprojects {
     subproject ->
         {
-            subproject.apply plugin: 'java'
+            subproject.apply plugin: 'groovy'
+            subproject.apply plugin: 'jacoco'
             subproject.apply plugin: 'io.spring.dependency-management'
         }
 
@@ -29,10 +31,45 @@ subprojects {
                 // The following will be used from all subprojects. This will define the versions of the imported
                 // libraries
                 mavenBom(SpringBootPlugin.BOM_COORDINATES)
+                mavenBom("org.spockframework:spock-bom:2.3-groovy-4.0")
             }
         }
 
+        dependencies {
+            testImplementation 'org.spockframework:spock-spring'
+            testImplementation 'org.spockframework:spock-core'
+            testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        }
+
+        jacocoTestReport {
+            dependsOn test // tests are required to run before generating the report
+        }
+
+        test {
+            useJUnitPlatform()
+            finalizedBy jacocoTestReport // report is always generated after tests run
+        }
+
+        tasks.named('check') {
+            dependsOn tasks.named('testAggregateTestReport', TestReport)
+        }
         // namespace your libraries... Imagine having to install them to a repo where several other libraries - projects
         // can have the same name (e.g. libraryone, core, web etc)
         archivesBaseName = project.rootProject.name + '-' + project.name
 }
+
+dependencies {
+    testReportAggregation project(':libraries:libraryone')
+    testReportAggregation project(':libraries:librarytwo')
+    testReportAggregation project(':services:serviceone')
+    testReportAggregation project(':services:servicetwo')
+}
+
+reporting {
+    reports {
+        testAggregateTestReport(AggregateTestReport) {
+            testType = TestSuiteType.UNIT_TEST
+        }
+    }
+}
+
